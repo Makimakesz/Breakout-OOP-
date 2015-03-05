@@ -44,7 +44,9 @@ class Brick
 {
 	private int type;
 	private Pos pos;
-	private double xVel;
+	private double xVel=0;
+	public double getXVel(){return xVel;}
+	public void setXVel(double xVel){this.xVel=xVel;}
 	public Pos getPos()
 	{
 		return pos;
@@ -57,6 +59,7 @@ class Brick
 	{
 		return pos.getY();
 	}
+	public void incX(double x){pos.setX(pos.getX()+x);}
 	public int getType(){return type;}
 	public void reduceType(){this.type--;}
 	Brick()
@@ -68,7 +71,7 @@ class Brick
 	Brick(int x,int y)
 	{
 		this.type=1;
-		this.xVel=1;
+		this.xVel=0.2;
 		this.pos = new Pos(x,y);
 	}
 }
@@ -78,7 +81,7 @@ class Player
 	private int lives=3;
 	private int score=0;
 	private Pos pos;
-	private int width=Breakout.playerWidth;
+	private int width=Breakout.playerWidth;//will be used when powerups are added(that change the width) and 2 players can play 
 	private int height=Breakout.playerHeight;
 	public int getScore(){return score;}
 	public void incScore(int score){this.score+=score;}
@@ -188,16 +191,18 @@ public class Breakout extends BasicGame {
 				ball[j].incPos(ball[j].getXVel(), ball[j].getYVel());
 				double x=ball[j].getX();
 				double y=ball[j].getY();
-				if(x<=10 || x>=790)
+				if(x<=10 || x>=width-10)
 					ball[j].reverseX();
-				if(y>=630)
+				if(y>=height-10)
 				{
 					Random rand = new Random();
 					rand.setSeed(System.currentTimeMillis());
 					player[0].decLives(1);
-					ball[j].setPos(player[0].getX()+playerWidth/2+ballRadius/2,player[0].getY()-1-playerHeight*2);
+					ball[j].setPos(player[0].getX()+playerWidth/2-ballRadius/2,player[0].getY()-1-playerHeight*2);
 					double yVel=rand.nextDouble()*(-1);
-					ball[j].setYVel(yVel*0.8+0.15);
+					yVel*=0.7;
+					yVel+=0.3;
+					ball[j].setYVel(yVel);
 					ball[j].setXVel(1.0-(yVel*yVel));
 					gameState=GameState.paused;
 				}
@@ -218,6 +223,22 @@ public class Breakout extends BasicGame {
 						}
 					}
 				}
+				boolean changeXVel=false;
+				for(int k=0;k<brick.length;k++)
+				{
+					if(brick[k].getType()>0)//List1(for future)
+					{
+						brick[k].incX(brick[k].getXVel());
+						if(brick[k].getX()<10 || brick[k].getX()>width-10-brickWidth)
+							changeXVel=true;
+					}
+				}
+				if(changeXVel)
+				{
+					for(int k=0;k<brick.length;k++)
+						if(brick[k].getType()>0)//List1
+							brick[k].setXVel(brick[k].getXVel()*(-1));
+				}
 				for(int k=0;k<player.length;k++)
 				{
 					checkCollision(player[k],ball[j]);
@@ -231,7 +252,7 @@ public class Breakout extends BasicGame {
 		//start screen
 		if(gameState==GameState.startGame)
 		{
-			
+
 		}
 		//game
 		if(gameState==GameState.inGame || gameState==GameState.paused)
@@ -270,10 +291,6 @@ public class Breakout extends BasicGame {
 		{
 			Logger.getLogger(Breakout.class.getName()).log(Level.SEVERE,null,ex);
 		}
-		
-		//DO GAME LOGIC
-		//DRAW SHIT
-		//KEYBOARD INPUT SOMEWHERE?
 	}
 	public static void deleteGame(){}
 	public static void createGame()
@@ -286,9 +303,9 @@ public class Breakout extends BasicGame {
 		//
 		ball = new Ball[1];
 		ball[0] = new Ball();
-		ball[0].setPos(100,100);
-		ball[0].setXVel(1);
-		ball[0].setYVel(1);
+		ball[0].setPos(width/2,height-80);
+		ball[0].setXVel(0);
+		ball[0].setYVel(-1);
 		brick = new Brick[numBricks];
 		for(int i=0;i<numBricks;i++)
 		{
@@ -347,13 +364,17 @@ OBJECT WIDTH/HEIGHT CONSTANT?
 
 
  Possible goals:
- randomized maps (follows pattern)
+ randomized maps (follows pattern) aka formations
+ temporary powerups, permanent powerups
+ 2 players?
+ multiple balls? <-- gotta arraylist that shit in that case
+ in fact i could arraylist everything and get rid of the type<=0 with bricks
  
  */
  
 /*
 
-WALLS, WHERE, EDGE OF SCREEN? x=0 && x=width
+WALLS, WHERE, EDGE OF SCREEN? x=0 && x=width or x=10 etc?
 HOW IT OPERATES?
 
 
