@@ -4,10 +4,12 @@ import java.util.logging.Logger;
 
 import org.newdawn.slick.AppGameContainer;
 import org.newdawn.slick.BasicGame;
+import org.newdawn.slick.Font;
 import org.newdawn.slick.GameContainer;
 import org.newdawn.slick.Graphics;
 import org.newdawn.slick.Input;
 import org.newdawn.slick.SlickException;
+import org.newdawn.slick.UnicodeFont;
 
 class Pos
 {
@@ -74,6 +76,12 @@ class Brick
 		this.xVel=0.2;
 		this.pos = new Pos(x,y);
 	}
+	Brick(int type,int x,int y)
+	{
+		this.type=type;
+		this.pos = new Pos(x,y);
+		this.xVel=0.2;
+	}
 }
 class Player
 {
@@ -96,6 +104,8 @@ class Player
 	public double getX(){return pos.getX();}
 	public double getY(){return pos.getY();}
 	public void setX(int x){pos.setX(x);}
+	public int getWidth(){return width;}
+	public int getHeight(){return height;}
 	Player()
 	{
 		pos = new Pos(0,Breakout.height-30);
@@ -146,7 +156,7 @@ class Ball
 }
 enum GameState
 {
-	startGame,inGame,paused
+	startGame,inGame,paused, gameOver
 }
 public class Breakout extends BasicGame {
 	static boolean twoPlayers=false;
@@ -178,7 +188,11 @@ public class Breakout extends BasicGame {
 			gameState=GameState.paused;
 		if(gameState==GameState.paused || gameState==GameState.startGame)
 			if(mouseDown)
+			{
+				int mouseX=input.getMouseX();
+				int mouseY=input.getMouseY();
 				gameState=GameState.inGame;
+			}
 		if(gameState==GameState.inGame)
 		{
 			int mouseX=input.getMouseX();
@@ -252,7 +266,7 @@ public class Breakout extends BasicGame {
 		//start screen
 		if(gameState==GameState.startGame)
 		{
-
+				
 		}
 		//game
 		if(gameState==GameState.inGame || gameState==GameState.paused)
@@ -271,6 +285,10 @@ public class Breakout extends BasicGame {
 			{
 				g.drawRect((int)player[i].getX(),(int)player[i].getY(),playerWidth,playerHeight);
 			}
+		}
+		if(gameState==GameState.paused)
+		{
+			g.drawString("Paused",width/2,height/2);
 		}
 	}
 	public static void main(String[] args) 
@@ -295,13 +313,13 @@ public class Breakout extends BasicGame {
 	public static void deleteGame(){}
 	public static void createGame()
 	{
-		createGame(50,10,1,0);
+		createGame(50,10,2,0);
 	}
 	public static void createGame(int numBricks,int bricksOnLine, int type, int formation)
 	{
 		//set all the bricks and shit
 		//
-		ball = new Ball[1];
+		ball = new Ball[1];//ArrayList in future for multiple balls
 		ball[0] = new Ball();
 		ball[0].setPos(width/2,height-80);
 		ball[0].setXVel(0);
@@ -309,7 +327,7 @@ public class Breakout extends BasicGame {
 		brick = new Brick[numBricks];
 		for(int i=0;i<numBricks;i++)
 		{
-			brick[i]=new Brick(100+(i%bricksOnLine)*50,100+(i/bricksOnLine)*50);
+			brick[i]=new Brick(type,100+(i%bricksOnLine)*50,100+(i/bricksOnLine)*50);
 		}
 		player = new Player[1];
 		player[0]=new Player();
@@ -318,9 +336,9 @@ public class Breakout extends BasicGame {
 	public void checkCollision(Player a, Ball b)
 	{
 		int x1=(int)a.getX();
-		int x2=x1+playerWidth;
+		int x2=x1+a.getWidth();
 		int y1=(int)a.getY();
-		int y2=y1+playerHeight;
+		int y2=y1+a.getHeight();
 		int collideX=0;
 		double newVelX=0;
 		double newVelY=0;
@@ -328,10 +346,10 @@ public class Breakout extends BasicGame {
 			if(y1<b.getY()+ballRadius && y2>b.getY())
 			{
 				collideX=(int)b.getX()+(ballRadius/2) - x1;
-				newVelX=(collideX%(playerWidth/2))/(double)playerWidth;
+				newVelX=(collideX%(a.getWidth()/2))/(double)a.getWidth();
 				newVelY=Math.sqrt(1-(newVelX*newVelX));
 				newVelY*=-1;
-				if(collideX<playerWidth/2)
+				if(collideX<a.getWidth()/2)
 					newVelX*=-1;
 				b.setXVel(newVelX);
 				b.setYVel(newVelY);
