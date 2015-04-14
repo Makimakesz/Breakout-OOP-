@@ -209,6 +209,7 @@ class Powerup
 	public double getX(){return pos.getX();}
 	public double getY(){return pos.getY();}
 	public int getRadius(){return radius;}
+	public int getType(){return type;}
 	public void move()
 	{
 		pos.move(0, yVel);
@@ -372,7 +373,7 @@ public class Breakout extends BasicGame {
 	static int ballRadius=40;
 	static int brickWidth=50;
 	static int brickHeight=10;
-	static int playerWidth=70;
+	static int playerWidth=100;
 	static int playerHeight=10;
 	static int wallSpace=ballRadius+10;
 	static int level=1;
@@ -383,12 +384,13 @@ public class Breakout extends BasicGame {
 	static int totalScore=0;
 	static int keysLeft[]={30,203};
 	static int keysRight[]={32,205};
-	static int powerupChance=5;
+	static int powerupChance=15;
 	static double velOffset=1;
 	static double gameOffset=10;
 	static double maxBallVel=1.0*velOffset;
 	static double maxBrickVel=0.2*velOffset;
 	static Color playerColors[]={Color.blue,Color.green};
+	static Color powerColor[]={Color.white,Color.yellow,Color.magenta};
 	static GameState gameState=GameState.startGame;
 	
 	static ArrayList<Brick> brick = new ArrayList<Brick>();
@@ -446,6 +448,10 @@ public class Breakout extends BasicGame {
 		if(input.isKeyPressed(input.KEY_4))
 		{
 			createGame(++level);
+		}
+		if(input.isKeyPressed(input.KEY_5))
+		{
+			powerup.add(new Powerup(2,300,300));
 		}
 		int playerSpeed=10;
 		for(int w=0;w<player.size();w++)
@@ -570,7 +576,14 @@ public class Breakout extends BasicGame {
 								int dropPowerup=Rand(0,powerupChance);
 								if(dropPowerup==0)
 								{
-									int powerType=1;//randomize that later
+									int powerType=0;//randomize that later
+									int powerRand=Rand(0,100);
+									if(powerRand<=50)
+										powerType=0;
+									else if(powerRand>50&&powerRand<=80)
+										powerType=1;
+									else
+										powerType=2;
 									powerup.add(new Powerup(powerType,brickX+(brickWidth/2),brickY));
 								}
 								break;
@@ -581,23 +594,32 @@ public class Breakout extends BasicGame {
 						//{
 						//checkCollision(player.get(k),ball.get(j));
 						//}
-						checkCollision(tmpPlayer,tempBall);
+						for(int k=0;k<player.size();k++)
+						{
+							//if(k!=w)
+								if(checkCollision(player.get(k),tempBall))
+									break;
+						}
 					}
 					for(int k=powerup.size()-1;k>=0;k--)
 					{
 						Powerup tempPower=powerup.get(k);
-						tempPower.move();
 						boolean collide=checkCollision(tempPower,tmpPlayer);
 						if(collide)
 						{
 							tempPower.invoke(w);
 							powerup.remove(k);
 						}
-						else if(tempPower.getY()>=height)
-							powerup.remove(k);
+						
 					}
 				}
-				
+				for(int k=powerup.size()-1;k>=0;k--)
+				{
+					Powerup tempPower=powerup.get(k);
+					tempPower.move();
+					if(tempPower.getY()>=height)
+						powerup.remove(k);
+				}
 				
 				boolean changeXVel=false;
 				for(int k=0;k<brick.size();k++)
@@ -760,7 +782,7 @@ public class Breakout extends BasicGame {
 				for(int i=0;i<powerup.size();i++)
 				{
 					Powerup tempPower=powerup.get(i);
-					g.setColor(Color.pink);
+					g.setColor(powerColor[tempPower.getType()]);
 					g.drawOval((int)tempPower.getX(),(int)tempPower.getY(),tempPower.getRadius(),tempPower.getRadius());
 				}
 				
@@ -980,7 +1002,7 @@ public class Breakout extends BasicGame {
 		createGame(level);
 		gameState=GameState.inGame;
 	}
-	public static void checkCollision(Player a, Ball b)
+	public static boolean checkCollision(Player a, Ball b)
 	{
 		int x1=(int)a.getX();
 		int x2=x1+a.getWidth();
@@ -995,7 +1017,9 @@ public class Breakout extends BasicGame {
 				double angle=((Math.PI/4*3)-(Math.PI/4))*(double)collideX/a.getWidth()+Math.PI/4;
 				b.setXVel(maxBallVel*Math.cos(angle)*-1);
 				b.setYVel(maxBallVel*Math.sin(angle)*-1);
+				return true;
 			}
+		return false;
 	}
 	public static int checkCollision(Brick a, Ball b)
 	{
