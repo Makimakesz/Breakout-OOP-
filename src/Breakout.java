@@ -94,6 +94,8 @@ class Player
 	private Pos pos;
 	private int width=Breakout.playerWidth;//will be used when powerups are added(that change the width) and 2 players can play 
 	private int height=Breakout.playerHeight;
+	private int numBalls=0;
+	private double xVel=1;
 	public int getScore(){return score;}
 	public void incScore(int score){this.score+=score;}
 	public void decLives(int lives){this.lives-=lives;}
@@ -104,19 +106,46 @@ class Player
 		pos.setX(x);
 		pos.setY(y);
 	}
+	public void move(double dx,double dy)
+	{
+		pos.move(dx,dy);
+	}
+	public void moveX(double dx)
+	{
+		pos.setX(pos.getX()+dx);
+	}
+	public void moveX()
+	{
+		pos.setX(pos.getX()+xVel);
+	}
+	public void decBall(){numBalls--;}
+	public void incBall(){numBalls++;}
+	public int getBalls(){return numBalls;}
 	public double getX(){return pos.getX();}
 	public double getY(){return pos.getY();}
 	public void setX(int x){pos.setX(x);}
+	public void setXVel(int xVel){this.xVel=xVel;}
+	public double getXVel(){return xVel;}
 	public int getWidth(){return width;}
 	public int getHeight(){return height;}
+	public void setWidth(int width){this.width=width;}
+	public void setHeight(int height){this.height=height;}
 	Player()
 	{
 		pos = new Pos(0,Breakout.height-30);
-		lives=3;
+	}
+	Player(double x, double y)
+	{
+		pos = new Pos(x,y);
+	}
+	Player(double x)
+	{
+		pos = new Pos(x,Breakout.height-30);
 	}
 }
 class Ball
 {
+	private final int owner;
 	private Pos pos;
 	private double xVel;
 	private double yVel;
@@ -136,6 +165,7 @@ class Ball
 	{
 		pos.move(xVel,yVel);
 	}
+	public int getOwner(){return owner;}
 	public double getXVel(){return xVel;}
 	public double getYVel(){return yVel;}
 	public void setXVel(double vel)
@@ -148,11 +178,12 @@ class Ball
 	}
 	public void reverseX(){xVel*=(-1);}
 	public void reverseY(){yVel*=(-1);}
-	Ball(int x,int y, double xVel, double yVel)
+	Ball(int x,int y, double xVel, double yVel, int owner)
 	{
 		pos=new Pos(x,y);
 		this.xVel=xVel;
 		this.yVel=yVel;
+		this.owner=owner;
 	}
 }
 
@@ -275,7 +306,6 @@ enum GameState
 	startGame,inGame,paused, gameOver
 }
 public class Breakout extends BasicGame {
-	static boolean twoPlayers=false;
 	static boolean isBasic=true;
 	static boolean isLoaded=false;
 	static int width=800;
@@ -291,6 +321,7 @@ public class Breakout extends BasicGame {
 	static int frameCount=0;
 	static int tempFrame=0;
 	static int randSeed=1;
+	static int numPlayers=2;
 	static double velOffset=1;
 	static double gameOffset=10;
 	static double maxBallVel=1.0*velOffset;
@@ -326,10 +357,12 @@ public class Breakout extends BasicGame {
 		Input input=gc.getInput();
 		boolean mouseDown = input.isMousePressed(0);
 		boolean pDown=input.isKeyPressed(input.KEY_P);
-		boolean kb1down=input.isKeyPressed(input.KEY_1);
 		int mouseX=input.getMouseX();
 		int mouseY=input.getMouseY();
-		Player tempPlayer=player.get(0);
+		Player Player1=player.get(0);
+		Player Player2;
+		if(player.size()>=2)
+			Player2=player.get(1);
 		if(mouseDown)
 		{
 			for(int k=0;k<button.size();k++)
@@ -342,23 +375,43 @@ public class Breakout extends BasicGame {
 					}
 			}
 		}
-		if(kb1down)
-		{
-			createBall(mouseX,mouseY,1,0);
-		}
-		if(input.isKeyPressed(input.KEY_2))
-		{
-			createParticle(mouseX,mouseY,6,1);
-		}
-		if(input.isKeyPressed(input.KEY_3))
-		{
-			createBall(mouseX,mouseY,0,-1);
-		}
 		if(input.isKeyPressed(input.KEY_4))
 		{
 			createGame(++level);
 		}
-		
+		int playerSpeed=10;
+		if(input.isKeyDown(input.KEY_A))
+		{	
+			if(Player1.getX()>playerSpeed)
+				Player1.moveX(-playerSpeed);
+			else
+				Player1.setX(0);
+		}
+		if(input.isKeyDown(input.KEY_D))
+		{	
+			if(Player1.getX()<width-playerSpeed-Player1.getWidth())
+				Player1.moveX(playerSpeed);
+			else
+				Player1.setX(width-Player1.getWidth());
+		}
+		if(player.size()>1)
+		{
+			Player2=player.get(1);
+			if(input.isKeyDown(input.KEY_LEFT))
+			{	
+				if(Player2.getX()>playerSpeed)
+					Player2.moveX(-playerSpeed);
+				else
+					Player2.setX(0);
+			}
+			if(input.isKeyDown(input.KEY_RIGHT))
+			{	
+				if(Player2.getX()<width-playerSpeed-Player2.getWidth())
+					Player2.moveX(playerSpeed);
+				else
+					Player2.setX(width-Player2.getWidth());
+			}
+		}
 		if(mouseDown && gameState==GameState.gameOver)
 		{
 			gc.exit();
@@ -378,34 +431,41 @@ public class Breakout extends BasicGame {
 		{
 			for(int z=0;z<gameOffset;z++)
 			{
-			if(mouseX>width-playerWidth)
-				tempPlayer.setX(width-playerWidth);
-			else
-				tempPlayer.setX(mouseX);
 			for(int j=0;j<ball.size();j++)
 			{
 				Ball tempBall=ball.get(j);
 				tempBall.move();
 				double x=tempBall.getX();
 				double y=tempBall.getY();
+				Player tmpPlayer=player.get(tempBall.getOwner());
 				if(x<=10 || x>=width-10)
 					tempBall.reverseX();
 				if(y>=height-10)
 				{
-					
-					if(ball.size()==1)
+					if(tmpPlayer.getBalls()==1)
 					{
-						gameState=GameState.paused;
-						tempPlayer.decLives(1);
-						if(tempPlayer.getLives()<=0)
+						tmpPlayer.decLives(1);
+						if(ball.size()==1)
+							gameState=GameState.paused;
+						
+						if(tmpPlayer.getLives()<=0)
 						{
-							gameState=GameState.gameOver;
+							player.remove(tempBall.getOwner());
+							ball.remove(j);
+							if(player.size()==0)
+							{
+								gameState=GameState.gameOver;
+							}
 							break;
 						}
+						
+						
 					}
-					if(ball.size()==1)
+					int owner=tempBall.getOwner();
+					if(tmpPlayer.getBalls()==1)
 					{
-						tempBall.setPos(tempPlayer.getX()+playerWidth/2-ballRadius/2,tempPlayer.getY()-ballRadius);
+						Player tempPlayer=player.get(tempBall.getOwner());
+						tempBall.setPos(tempPlayer.getX()+tempPlayer.getWidth()/2-ballRadius/2,tempPlayer.getY()-ballRadius);
 						//double yVel=rand.nextDouble()*maxBallVel;
 						double yVel=Rand(0.3*maxBallVel,maxBallVel*0.8);
 						double xVel;
@@ -418,9 +478,18 @@ public class Breakout extends BasicGame {
 					}
 					else
 					{
+						player.get(tempBall.getOwner()).decBall();
 						ball.remove(j);
 						continue;
 					}
+					if(player.get(tempBall.getOwner()).getLives()==0)
+					{
+						player.get(tempBall.getOwner()).decBall();
+						player.remove(tempBall.getOwner());
+						ball.remove(j);
+						continue;
+					}
+					
 				}
 				if(y<=10)
 					tempBall.reverseY();
@@ -438,7 +507,7 @@ public class Breakout extends BasicGame {
 						tempBall.move();
 						if(tempBrick.getType()==1)
 							break;
-						tempPlayer.incScore(1);
+						player.get(tempBall.getOwner()).incScore(1);
 						tempBrick.reduceLife();
 						if(tempBrick.getLife()==0)
 						{
@@ -596,8 +665,12 @@ public class Breakout extends BasicGame {
 				}
 				for(int i=0;i<player.size();i++)
 				{
-					g.setColor(Color.white);
-					g.drawRect((int)player.get(i).getX(),(int)player.get(i).getY(),playerWidth,playerHeight);
+					if(i==0)
+						g.setColor(Color.blue);
+					if(i==1)
+						g.setColor(Color.green);
+					Player tmpPlayer=player.get(i);
+					g.drawRect((int)tmpPlayer.getX(),(int)tmpPlayer.getY(),tmpPlayer.getWidth(),tmpPlayer.getHeight());
 				}
 				for(int i=0;i<particle.size();i++)
 				{
@@ -619,7 +692,10 @@ public class Breakout extends BasicGame {
 				{
 					Brick tempBrick=brick.get(i);
 					if(tempBrick.getType()>0)
-						g.drawImage(brickImage[tempBrick.getType()-1],(float)tempBrick.getX(),(float)tempBrick.getY());
+						brickImage[tempBrick.getType()-1].draw((float)tempBrick.getX(),(float)tempBrick.getY(),50,10);
+						//g.drawImage(brickImage[tempBrick.getType()-1],(float)tempBrick.getX(),(float)tempBrick.getY());
+					//brickImage[0].
+					//g.drawImage
 				}
 				for(int i=0;i<ball.size();i++)
 				{
@@ -643,7 +719,9 @@ public class Breakout extends BasicGame {
 	}
 	public static void Init()
 	{
-		player.add(new Player());
+		player.add(new Player(width/2-width/4));
+		player.add(new Player(width/2+width/4));
+		
 		button.add(new Button("startGame",getClass((Class[])null),getObj((Object[])null),250,300,300,100));
 		button.add(new Button("setTextures",getClass(String.class),getObj("gfx1"),100,100,300,100));
 		button.add(new Button("setTextures",getClass(boolean.class),getObj(true),450,100,300,100));
@@ -705,9 +783,9 @@ public class Breakout extends BasicGame {
 	{
 		
 	}
-	public static void createBall(int x,int y,double xVel, double yVel)
+	public static void createBall(int x,int y,double xVel, double yVel,int owner)
 	{
-		ball.add(new Ball(x,y,xVel,yVel));
+		ball.add(new Ball(x,y,xVel,yVel,owner));
 	}
 	public static void createParticle(double x, double y,int n, int formation)
 	{
@@ -736,7 +814,12 @@ public class Breakout extends BasicGame {
 		//randomize the kind of layout
 		int n = ball.size();
 		if(n==0)
-			ball.add(new Ball(width/2,height-80,0,maxBallVel*-1));
+		for(int i=0;i<player.size();i++)
+		{
+			Player tempPlayer=player.get(i);
+			tempPlayer.incBall();
+			ball.add(new Ball((int)tempPlayer.getX()+tempPlayer.getWidth()/2-ballRadius/2,(int)tempPlayer.getY()-ballRadius-1,0,maxBallVel*-1,i));
+		}
 		else if(n==1)
 		{
 			Ball tempBall=ball.get(0);
@@ -779,6 +862,14 @@ public class Breakout extends BasicGame {
 		{
 			button.get(i).setVisibility(false);
 			button.get(i).setActive(false);
+		}
+		if(numPlayers==1)
+			player.remove(1);
+		else
+		{
+			player.get(0).setWidth((int)(playerWidth/1.5));
+			player.get(1).setWidth((int)(playerWidth/1.5));
+			
 		}
 		createGame(level);
 		gameState=GameState.inGame;
@@ -873,7 +964,13 @@ OBJECT WIDTH/HEIGHT CONSTANT?
  Possible goals:
  randomized maps (follows pattern) aka formations
  temporary powerups, permanent powerups
- 2 players?
+ 2 players: movement "ad", "left right", 1st player data: left screen, 2nd player data: right screen
 
+POWERUPS: Activate via button:
+increasePlayerWidth
+addLives
+addBall - already exists
+ball.getOwner()
 
+TEXT FILES: level data read, highscore write
  */
