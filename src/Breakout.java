@@ -98,7 +98,7 @@ class Player
 	private int moveLeft=-1;
 	private int moveRight=-1;
 	private Color color;
-	private double xVel=1;
+	private double xVel=1.5;
 	public int getScore(){return score;}
 	public void incScore(int score){this.score+=score;Breakout.totalScore+=score;}
 	public void decLives(int lives){this.lives-=lives;}
@@ -264,6 +264,7 @@ class Button
 	private boolean isVisible;
 	private boolean isActive;
 	private String methodName;
+	private ArrayList<GameState> visibleStates = new ArrayList<GameState>();
 	private Class[] types;
 	private Object[] args;
 	public Pos getPos(){return pos;}
@@ -271,6 +272,28 @@ class Button
 	public int getHeight(){return height;}
 	public boolean getActive(){return isActive;}
 	public boolean getVisible(){return isVisible;}
+	public void setState(GameState gs)
+	{
+		isActive=false;
+		isVisible=false;
+		for(int i=0;i<visibleStates.size();i++)
+		{
+			if(gs==visibleStates.get(i))
+			{
+				isActive=true;
+				isVisible=true;
+				return;
+			}
+		}
+	}
+	public void setStates(GameState... gs)
+	{
+		visibleStates.clear();
+		for(int i=0;i < gs.length;i++)
+		{
+			visibleStates.add(gs[i]);
+		}
+	}
 	public void setVisibility(boolean vis)
 	{
 		isVisible=vis;
@@ -375,6 +398,7 @@ public class Breakout extends BasicGame {
 	static int brickHeight=10;
 	static int playerWidth=100;
 	static int playerHeight=10;
+	static int playerSpeed=15;
 	static int wallSpace=ballRadius+10;
 	static int level=1;
 	static int frameCount=0;
@@ -453,7 +477,6 @@ public class Breakout extends BasicGame {
 		{
 			powerup.add(new Powerup(2,300,300));
 		}
-		int playerSpeed=10;
 		for(int w=0;w<player.size();w++)
 		{
 			Player tempPlayer=player.get(w);
@@ -477,14 +500,14 @@ public class Breakout extends BasicGame {
 			gc.exit();
 		}
 		if(pDown && gameState==GameState.paused)
-			gameState=GameState.inGame;
+			changeState(GameState.inGame);
 		else if(pDown && gameState==GameState.inGame)
-			gameState=GameState.paused;
+			changeState(GameState.paused);
 		if(gameState==GameState.paused)
 			if(mouseDown)
 			{
 				
-				gameState=GameState.inGame;
+				changeState(GameState.inGame);
 			}
 		
 		if(gameState==GameState.inGame)
@@ -509,7 +532,7 @@ public class Breakout extends BasicGame {
 								tmpPlayer.decLives(1);
 								//if(tmpPlayer.ball.size()==1)
 								if(totalBalls()==1)
-									gameState=GameState.paused;
+									changeState(GameState.paused);
 								
 								if(tmpPlayer.getLives()<=0)
 								{
@@ -517,7 +540,7 @@ public class Breakout extends BasicGame {
 									player.remove(w);
 									if(player.size()==0)
 									{
-										gameState=GameState.gameOver;
+										changeState(GameState.gameOver);
 									}
 									break;
 								}
@@ -842,16 +865,32 @@ public class Breakout extends BasicGame {
 		button.add(new Button("setTextures",getClass(String.class),getObj("gfx1"),100,100,300,100));
 		button.add(new Button("setTextures",getClass(boolean.class),getObj(true),450,100,300,100));
 		button.add(new Button("setTextures",getClass(String.class),getObj("gfx2"),100,100,50,50,false,false));
+		//button.add(new Button("setPlayers",getClass(Integer.class),getObj((int)1),100,100,50,50));
+		Button player1=new Button("setPlayers",getClass(Integer.class),getObj((int)1),100,100,50,50);
+		Button player2=new Button("setPlayers",getClass(Integer.class),getObj((int)2),100,100,50,50);
+		player1.setStates(GameState.startGame);
+		player2.setStates(GameState.startGame);
+		
+		button.add(player1);
+		button.add(player2);
+		
 		setTextures(true);
+	}
+	public static void setPlayers(int count)
+	{
+		numPlayers=count;
+	}
+	public static void changeState(GameState gs)
+	{
+		gameState=gs;
+		for(int i=0;i<button.size();i++)
+		{
+			button.get(i).setState(gs);
+		}
 	}
 	public static void setTextures(String folder)
 	{
 		isBasic=false;
-		ballRadius=40;
-		brickWidth=143;
-		brickHeight=90;
-		playerWidth=132;
-		playerHeight=64;
 		try
 		{
 			playerImage = new Image(folder+"/player.png");
@@ -995,12 +1034,12 @@ public class Breakout extends BasicGame {
 			player.remove(1);
 		else
 		{
-			player.get(0).setWidth((int)(playerWidth/1.5));
-			player.get(1).setWidth((int)(playerWidth/1.5));
+			player.get(0).setWidth((int)(playerWidth*0.9));
+			player.get(1).setWidth((int)(playerWidth*0.9));
 			
 		}
 		createGame(level);
-		gameState=GameState.inGame;
+		changeState(GameState.inGame);
 	}
 	public static boolean checkCollision(Player a, Ball b)
 	{
@@ -1134,22 +1173,26 @@ public class Breakout extends BasicGame {
 	}
 }
 
-/* The following comments are reminders/thoughts for me
+/* 
 
-OBJECT WIDTH/HEIGHT CONSTANT?
+[50%] start menu
+[ ] player count
+[?] highscore
+[?] better graphics
 
+[ ] randomized maps (follows pattern) aka formations
+[+] temporary powerups (addBall? lives?)
+[+] permanent powerups
+[+] 2 players: movement "ad", "left right"
+[ ] 1st player data: left screen, 2nd player data: right screen
 
+[+] POWERUPS: Activate via button:
+[+] increasePlayerWidth
+[+] addLives
+[+] addBall - already exists 
+[ ] Graphics
 
- Possible goals:
- randomized maps (follows pattern) aka formations
- temporary powerups, permanent powerups
- 2 players: movement "ad", "left right", 1st player data: left screen, 2nd player data: right screen
-
-POWERUPS: Activate via button:
-increasePlayerWidth
-addLives
-addBall - already exists
-ball.getOwner()
-
-TEXT FILES: level data read, highscore write
+TEXT FILES: 
+[ ] level data read
+[ ] highscore write
  */
