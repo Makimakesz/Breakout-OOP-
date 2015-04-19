@@ -89,6 +89,7 @@ class Brick
 
 class Player
 {
+	public final int ID;	
 	private int lives=3;
 	private int score=0;
 	private Pos pos;
@@ -140,16 +141,19 @@ class Player
 	public int getRight(){return moveRight;}
 	public void setColor(Color color){this.color=color;}
 	public Color getColor(){return color;}
-	Player()
+	Player(int id)
 	{
+		ID=id;
 		pos = new Pos(0,Breakout.height-30);
 	}
-	Player(double x, double y)
+	Player(int id, double x, double y)
 	{
+		ID=id;
 		pos = new Pos(x,y);
 	}
-	Player(double x)
+	Player(int id, double x)
 	{
+		ID=id;
 		pos = new Pos(x,Breakout.height-30);
 	}
 }
@@ -853,8 +857,8 @@ public class Breakout extends BasicGame {
 	}
 	public static void Init()
 	{
-		player.add(new Player(width/2-width/4));
-		player.add(new Player(width/2+width/4));
+		player.add(new Player(0,width/2-width/4));
+		player.add(new Player(1,width/2+width/4));
 		for(int i=0;i<2;i++)
 		{
 			Player tmpPlayer=player.get(i);
@@ -1184,7 +1188,7 @@ public class Breakout extends BasicGame {
 [+] temporary powerups (addBall? lives?)
 [+] permanent powerups
 [+] 2 players: movement "ad", "left right"
-[ ] 1st player data: left screen, 2nd player data: right screen
+[ ] 1st player data: left screen, 2nd player data: right screen : player.id!!
 
 [+] POWERUPS: Activate via button:
 [+] increasePlayerWidth
