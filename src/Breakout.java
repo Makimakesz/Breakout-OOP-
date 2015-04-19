@@ -268,6 +268,7 @@ class Button
 	private boolean isVisible;
 	private boolean isActive;
 	private String methodName;
+	private int imageNum;
 	private ArrayList<GameState> visibleStates = new ArrayList<GameState>();
 	private Class[] types;
 	private Object[] args;
@@ -315,7 +316,8 @@ class Button
 		this.args=args;
 		this.invoke();
 	}
-	Button(String methodName,Class[] types,Object[] args,int x,int y, int width,int height,boolean isVisible,boolean isActive)
+	public int getImageNumber(){return imageNum;}
+	Button(String methodName,Class[] types,Object[] args,int x,int y, int width,int height,boolean isVisible,boolean isActive, int image)
 	{
 		this.methodName=methodName;
 		this.types=types;
@@ -325,10 +327,11 @@ class Button
 		this.height=height;
 		this.isVisible=isVisible;
 		this.isActive=isActive;
+		this.imageNum=image;
 	}
-	Button(String methodName,Class[] types,Object[] args,int x,int y, int width,int height)
+	Button(String methodName,Class[] types,Object[] args,int x,int y, int width,int height,int image)
 	{
-		this(methodName,types,args,x,y,width,height,true,true);
+		this(methodName,types,args,x,y,width,height,true,true, image);
 	}
 }	
 class Particle
@@ -385,7 +388,6 @@ class Particle
 			return true;
 		return false;
 	}
-	
 }
 enum GameState
 {
@@ -397,7 +399,7 @@ public class Breakout extends BasicGame {
 	static int width=800;
 	static int height=600;
 	static int targetFPS=60;
-	static int ballRadius=40;
+	static int ballRadius=20;
 	static int brickWidth=50;
 	static int brickHeight=10;
 	static int playerWidth=100;
@@ -408,7 +410,7 @@ public class Breakout extends BasicGame {
 	static int frameCount=0;
 	static int tempFrame=0;
 	static int randSeed=1;
-	static int numPlayers=2;
+	static int numPlayers=1;
 	static int totalScore=0;
 	static int keysLeft[]={30,203};
 	static int keysRight[]={32,205};
@@ -428,11 +430,12 @@ public class Breakout extends BasicGame {
 	static ArrayList<Powerup> powerup = new ArrayList<Powerup>();
 	static ArrayList<ImageBuffer> bufParticle = new ArrayList<ImageBuffer>();
 	static ArrayList<Image> imageParticle = new ArrayList<Image>();
-	static Image playerImage;
+	static Image[] playerImage = new Image[2];
 	static Image[] brickImage;
 	static Image ballImage;
 	static Image backgroundImage;
 	static Image[] buttonImage;
+	static Image[] powerupImage = new Image[3];
 	public static Class[] getClass(Class... cls){return cls;}
 	public static Object[] getObj(Object... obj){return obj;}
 	public Breakout(String gameName)
@@ -441,9 +444,6 @@ public class Breakout extends BasicGame {
 	}
 	@Override public void init(GameContainer gc) throws SlickException
 	{
-		//Renderer.setRenderer(Renderer.VERTEX_ARRAY_RENDERER);
-		System.out.println("init");
-
 	}
 	@Override public void update(GameContainer gc, int i) throws SlickException 
 	{
@@ -465,7 +465,7 @@ public class Breakout extends BasicGame {
 					}
 			}
 		}
-		if(input.isKeyPressed(input.KEY_1))
+		if(input.isKeyPressed(input.KEY_1))//the following are for testing purposes
 		{
 			createBall(50,50,1,0,0);
 		}
@@ -481,25 +481,43 @@ public class Breakout extends BasicGame {
 		{
 			powerup.add(new Powerup(2,300,300));
 		}
-		for(int w=0;w<player.size();w++)
+		/*if(gameState==GameState.paused)
 		{
-			Player tempPlayer=player.get(w);
-			if(input.isKeyDown(tempPlayer.getLeft()))
-			{	
-				if(tempPlayer.getX()>playerSpeed)
-					tempPlayer.moveX(-playerSpeed);
-				else
-					tempPlayer.setX(0);
+			for(int w=0;w<player.size();w++)
+			{
+				Player tempPlayer=player.get(w);
+				boolean leftDown=input.isKeyPressed(tempPlayer.getLeft());
+				boolean rightDown=input.isKeyPressed(tempPlayer.getRight());
+				if(leftDown||rightDown)
+				{	
+					System.out.println("Left: " + leftDown + " Right: " + rightDown);
+					changeState(GameState.inGame);
+					break;
+				}
 			}
-			if(input.isKeyDown(tempPlayer.getRight()))
-			{	
-				if(tempPlayer.getX()<width-playerSpeed-tempPlayer.getWidth())
-					tempPlayer.moveX(playerSpeed);
-				else
-					tempPlayer.setX(width-tempPlayer.getWidth());
+		}*/
+		if(gameState==GameState.inGame)
+		{
+			for(int w=0;w<player.size();w++)
+			{
+				Player tempPlayer=player.get(w);
+				if(input.isKeyDown(tempPlayer.getLeft()))
+				{	
+					if(tempPlayer.getX()>playerSpeed)
+						tempPlayer.moveX(-playerSpeed);
+					else
+						tempPlayer.setX(0);
+				}
+				if(input.isKeyDown(tempPlayer.getRight()))
+				{	
+					if(tempPlayer.getX()<width-playerSpeed-tempPlayer.getWidth())
+						tempPlayer.moveX(playerSpeed);
+					else
+						tempPlayer.setX(width-tempPlayer.getWidth());
+				}
 			}
 		}
-		if(mouseDown && gameState==GameState.gameOver)
+		if((mouseDown||pDown) && gameState==GameState.gameOver)
 		{
 			gc.exit();
 		}
@@ -549,7 +567,6 @@ public class Breakout extends BasicGame {
 									break;
 								}
 								tempBall.setPos(tmpPlayer.getX()+tmpPlayer.getWidth()/2-ballRadius/2,tmpPlayer.getY()-ballRadius);
-								//double yVel=rand.nextDouble()*maxBallVel;
 								double yVel=Rand(0.3*maxBallVel,maxBallVel*0.8);
 								double xVel;
 								yVel*=0.7;
@@ -616,11 +633,6 @@ public class Breakout extends BasicGame {
 								break;
 							}
 						}
-						
-						//for(int k=0;k<player.size();k++)
-						//{
-						//checkCollision(player.get(k),ball.get(j));
-						//}
 						for(int k=0;k<player.size();k++)
 						{
 							//if(k!=w)
@@ -729,11 +741,30 @@ public class Breakout extends BasicGame {
 			imageParticle.add(new Image(bufParticle1));
 			try
 			{
-				buttonImage = new Image[4];
-				buttonImage[0]=new Image("gfx1/start2.png");
-				buttonImage[1]=new Image("gfx1/gfx.png");
-				buttonImage[2]=new Image("gfx1/basic.png");
-				buttonImage[3]=buttonImage[0];
+				buttonImage = new Image[5];
+				buttonImage[0]=new Image("data/start.png");
+				buttonImage[1]=new Image("data/gfx.png");
+				buttonImage[2]=new Image("data/basic.png");
+				buttonImage[3]=new Image("data/players1.png");
+				buttonImage[4]=new Image("data/players2.png");
+				int playerCount=2;
+				int brickCount=9;
+				int powerupCount=3;
+				for(int i=0;i<playerCount;i++)
+				{
+					playerImage[i] = new Image("data/player" + (i+1) + ".png");
+				}
+				ballImage = new Image("data/ball.png");
+				backgroundImage = new Image("data/bg.png");
+				brickImage=new Image[brickCount];
+				for(int i=0;i<brickCount;i++)
+				{
+					brickImage[i]=new Image("data/brick"+(i+1)+".png");
+				}
+				for(int i=0;i<powerupCount;i++)
+				{
+					powerupImage[i]=new Image("data/powerup"+(i+1)+".png");
+				}
 			}
 			catch(Throwable e)
 			{
@@ -743,18 +774,70 @@ public class Breakout extends BasicGame {
 		}
 		if(isBasic)
 			g.setBackground(Color.black);
-		else
-			g.drawImage(backgroundImage, 0, 0);
+		//else
+		//	g.drawImage(backgroundImage, 0, 0);
 		for(int i=0;i<button.size();i++)
 		{
 			Button tempButton=button.get(i);
 			if(tempButton.getVisible())
 			{
-				g.drawImage(buttonImage[i],(float)tempButton.getPos().getX(),(float)tempButton.getPos().getY());
+				g.drawImage(buttonImage[tempButton.getImageNumber()],(float)tempButton.getPos().getX(),(float)tempButton.getPos().getY());
+				
 			}
 		}
 		if(gameState==GameState.startGame)
 		{
+			g.setColor(Color.green);
+			g.drawString("Player movement keys are:\n\nPlayer 1\nLeft: 'a'\nRight: 'd'\n\nPlayer 2\nLeft: 'left arrow key'\nRight: 'right arrow key'\n\nPause: 'p'" , 30, 170);
+			Button tempButton;
+			g.setLineWidth(3);
+			g.setColor(Color.red);
+			tempButton=button.get(0);
+			g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			if(numPlayers==1)
+			{
+				g.setLineWidth(3);
+				g.setColor(Color.red);
+				tempButton=button.get(3);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				g.setLineWidth(1);
+				g.setColor(Color.gray);
+				tempButton=button.get(4);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			}
+			else
+			{
+				g.setLineWidth(3);
+				g.setColor(Color.red);
+				tempButton=button.get(4);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				g.setLineWidth(1);
+				g.setColor(Color.gray);
+				tempButton=button.get(3);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			}
+			if(isBasic)
+			{
+				g.setLineWidth(3);
+				g.setColor(Color.red);
+				tempButton=button.get(2);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				g.setLineWidth(1);
+				g.setColor(Color.gray);
+				tempButton=button.get(1);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			}
+			else
+			{
+				g.setLineWidth(3);
+				g.setColor(Color.red);
+				tempButton=button.get(1);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				g.setLineWidth(1);
+				g.setColor(Color.gray);
+				tempButton=button.get(2);
+				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			}
 				/*Image image;
 				Texture text;
 				text=TextureLoader.*/
@@ -816,12 +899,16 @@ public class Breakout extends BasicGame {
 			}
 			else
 			{
-				
+				for(int i=0;i<powerup.size();i++)
+				{
+					Powerup tempPower=powerup.get(i);
+					powerupImage[tempPower.getType()].draw((int)tempPower.getX(),(int)tempPower.getY());
+				}
 				for(int i=0;i<brick.size();i++)
 				{
 					Brick tempBrick=brick.get(i);
-					if(tempBrick.getType()>0)
-						brickImage[tempBrick.getType()-1].draw((float)tempBrick.getX(),(float)tempBrick.getY(),50,10);
+					if(tempBrick.getType()==0)
+						brickImage[tempBrick.getLife()].draw((float)tempBrick.getX(),(float)tempBrick.getY(),50,10);
 						//g.drawImage(brickImage[tempBrick.getType()-1],(float)tempBrick.getX(),(float)tempBrick.getY());
 					//brickImage[0].
 					//g.drawImage
@@ -830,7 +917,9 @@ public class Breakout extends BasicGame {
 				for(int i=0;i<player.size();i++)
 				{
 					Player tmpPlayer=player.get(i);
-					g.drawImage(playerImage, (float)tmpPlayer.getX(), (float)tmpPlayer.getY());
+					playerImage[i].draw((float)tmpPlayer.getX(), (float)tmpPlayer.getY(),(float)tmpPlayer.getWidth(),playerHeight);
+					//g.drawIm
+					//g.drawImage(playerImage, (float)tmpPlayer.getX(), (float)tmpPlayer.getY(),(float)tmpPlayer.getWidth(),playerHeight);
 					for(int k=0;k<tmpPlayer.ball.size();k++)
 					{
 						Ball tempBall=tmpPlayer.ball.get(k);
@@ -865,20 +954,23 @@ public class Breakout extends BasicGame {
 			tmpPlayer.setKeys(keysLeft[i], keysRight[i]);
 			tmpPlayer.setColor(playerColors[i]);
 		}
-		button.add(new Button("startGame",getClass((Class[])null),getObj((Object[])null),250,300,300,100));
-		button.add(new Button("setTextures",getClass(String.class),getObj("gfx1"),100,100,300,100));
-		button.add(new Button("setTextures",getClass(boolean.class),getObj(true),450,100,300,100));
-		button.add(new Button("setTextures",getClass(String.class),getObj("gfx2"),100,100,50,50,false,false));
-		//button.add(new Button("setPlayers",getClass(Integer.class),getObj((int)1),100,100,50,50));
-		Button player1=new Button("setPlayers",getClass(Integer.class),getObj((int)1),100,100,50,50);
-		Button player2=new Button("setPlayers",getClass(Integer.class),getObj((int)2),100,100,50,50);
+		Button startGame = new Button("startGame",getClass((Class[])null),getObj((Object[])null),300,500,200,50,0);
+		Button textures1=new Button("setGraphics",getClass(boolean.class),getObj(true),30,30,200,50,1);
+		Button textures2=new Button("setGraphics",getClass(boolean.class),getObj(false),260,30,200,50,2);
+		Button player1=new Button("setPlayers",getClass(int.class),getObj((int)1),30,100,200,50,3);
+		Button player2=new Button("setPlayers",getClass(int.class),getObj((int)2),260,100,200,50,4);
+		startGame.setStates(GameState.startGame);
+		textures1.setStates(GameState.startGame);
+		textures2.setStates(GameState.startGame);
 		player1.setStates(GameState.startGame);
 		player2.setStates(GameState.startGame);
-		
+		button.add(startGame);
+		button.add(textures1);
+		button.add(textures2);
 		button.add(player1);
 		button.add(player2);
-		
-		setTextures(true);
+		setGraphics(true);
+		changeState(GameState.startGame);
 	}
 	public static void setPlayers(int count)
 	{
@@ -892,37 +984,13 @@ public class Breakout extends BasicGame {
 			button.get(i).setState(gs);
 		}
 	}
-	public static void setTextures(String folder)
+	public static void setGraphics(boolean basic)
 	{
-		isBasic=false;
-		try
-		{
-			playerImage = new Image(folder+"/player.png");
-			ballImage = new Image(folder+"/ball.png");
-			backgroundImage = new Image(folder+"/bg.png");
-			brickImage=new Image[8];
-			for(int i=0;i<8;i++)
-			{
-				brickImage[i]=new Image(folder+"/"+(i+1)+".png");
-			}
-		}
-		catch(Throwable e)
-		{
-			System.out.println(e);
-		}
-	}
-	public static void setTextures(boolean basic)
-	{
-		isBasic=basic;
-		ballRadius=20;
-		brickWidth=50;
-		brickHeight=10;
-		playerWidth=70;
-		playerHeight=10;
+		isBasic=!basic;
 	}
 	public static void main(String[] args) 
 	{
-		Init();
+		
 		// MENU OPTION IN START SCREEN TWO PLAYERS (future)
 		
 		try
@@ -932,7 +1000,9 @@ public class Breakout extends BasicGame {
 			appgc.setDisplayMode(width,height,false);
 			appgc.setTargetFrameRate(targetFPS);
 			appgc.setShowFPS(false);
+			Init();
 			appgc.start();
+			System.out.println("Test");
 		}
 		catch (SlickException ex)
 		{
@@ -1029,13 +1099,10 @@ public class Breakout extends BasicGame {
 	}
 	public static void startGame()
 	{
-		for(int i=0;i<3;i++)
-		{
-			button.get(i).setVisibility(false);
-			button.get(i).setActive(false);
-		}
 		if(numPlayers==1)
+		{
 			player.remove(1);
+		}
 		else
 		{
 			player.get(0).setWidth((int)(playerWidth*0.9));
