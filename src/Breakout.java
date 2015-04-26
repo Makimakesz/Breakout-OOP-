@@ -1,6 +1,8 @@
+import java.io.*;
 import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.ArrayList;
@@ -253,7 +255,7 @@ class Powerup
 			{
 				methodName="incWidth";
 				types=new Class[]{int.class,int.class};
-				args=new Object[]{0,30};
+				args=new Object[]{0,Breakout.incWidthAmount};
 				ownerIndex=0;
 				break;
 			}
@@ -358,7 +360,8 @@ class Particle
 	}
 	public void move()
 	{
-		pos.move(xVel,yVel);
+		if(type==0 || type==1)
+			pos.move(xVel,yVel);
 		
 	}
 	public int getWidth(){return width;}
@@ -374,14 +377,14 @@ class Particle
 	public double getY(){return pos.getY();}
 	public double getXVel(){return xVel;}
 	public double getYVel(){return yVel;}
-	public double getXOffset()
+	/*public double getXOffset()
 	{
 		return pos.getX() + life*xVel;
 	}
 	public double getYOffset()
 	{
 		return pos.getY() + life*yVel;
-	}
+	}*/
 	public boolean isDead()
 	{
 		if(life>=halfLife)
@@ -412,14 +415,16 @@ public class Breakout extends BasicGame {
 	static int randSeed=1;
 	static int numPlayers=1;
 	static int totalScore=0;
+	static int highScore=0;
 	static int keysLeft[]={30,203};
 	static int keysRight[]={32,205};
 	static int powerupChance=15;
+	static int incWidthAmount=10;
 	static double velOffset=1;
 	static double gameOffset=10;
 	static double maxBallVel=1.0*velOffset;
 	static double maxBrickVel=0.2*velOffset;
-	static Color playerColors[]={Color.blue,Color.green};
+	static Color playerColors[]={new Color(95,148,232,255),new Color(27,202,91,255)};
 	static Color powerColor[]={Color.white,Color.yellow,Color.magenta};
 	static GameState gameState=GameState.startGame;
 	
@@ -451,6 +456,11 @@ public class Breakout extends BasicGame {
 		Input input=gc.getInput();
 		boolean mouseDown = input.isMousePressed(0);
 		boolean pDown=input.isKeyPressed(input.KEY_P);
+		if(totalScore>highScore)
+		{
+			highScore=totalScore;
+			saveData();
+		}
 		int mouseX=input.getMouseX();
 		int mouseY=input.getMouseY();
 		if(mouseDown)
@@ -481,21 +491,6 @@ public class Breakout extends BasicGame {
 		{
 			powerup.add(new Powerup(2,300,300));
 		}
-		/*if(gameState==GameState.paused)
-		{
-			for(int w=0;w<player.size();w++)
-			{
-				Player tempPlayer=player.get(w);
-				boolean leftDown=input.isKeyPressed(tempPlayer.getLeft());
-				boolean rightDown=input.isKeyPressed(tempPlayer.getRight());
-				if(leftDown||rightDown)
-				{	
-					System.out.println("Left: " + leftDown + " Right: " + rightDown);
-					changeState(GameState.inGame);
-					break;
-				}
-			}
-		}*/
 		if(gameState==GameState.inGame)
 		{
 			for(int w=0;w<player.size();w++)
@@ -526,12 +521,10 @@ public class Breakout extends BasicGame {
 		else if(pDown && gameState==GameState.inGame)
 			changeState(GameState.paused);
 		if(gameState==GameState.paused)
-			if(mouseDown)
+			if(mouseDown || input.isKeyDown(input.KEY_SPACE))
 			{
-				
 				changeState(GameState.inGame);
 			}
-		
 		if(gameState==GameState.inGame)
 		{
 			for(int z=0;z<gameOffset;z++)
@@ -698,6 +691,7 @@ public class Breakout extends BasicGame {
 				{
 					Particle tempPart=particle.get(k);
 					tempPart.incLife();
+					tempPart.move();
 					if(tempPart.isDead())
 					{
 						particle.remove(k);
@@ -706,14 +700,14 @@ public class Breakout extends BasicGame {
 					
 					int Width=tempPart.getWidth();
 					int Height=tempPart.getHeight();
-					double xOffset=tempPart.getXOffset();
-					double yOffset=tempPart.getYOffset();
-					if(xOffset+Width>width || xOffset+Width<0)
+					double x=tempPart.getX();
+					double y=tempPart.getY();
+					if(x+Width>width || x+Width<0)
 					{
 						particle.remove(k);
 						continue;
 					}
-					if(yOffset+Height>height || yOffset+Height<0)
+					if(y+Height>height || y+Height<0)
 						particle.remove(k);
 				}
 				
@@ -726,8 +720,10 @@ public class Breakout extends BasicGame {
 		if(!isLoaded)
 		{
 			ImageBuffer bufParticle1 = new ImageBuffer(3,3);
+			ImageBuffer bufParticle2 = new ImageBuffer(5,1);
 			//ImageBuffer bufParticle2 = new ImageBuffer(2,3);
 			int[] colors1={255,255,255};
+			int[] colors2={255,255,255};
 			//int[] colors2={0,255,0};
 			bufParticle1.setRGBA(0, 0, colors1[0], colors1[1], colors1[2], 0);
 			bufParticle1.setRGBA(0, 1, colors1[0], colors1[1], colors1[2], 255);
@@ -738,7 +734,10 @@ public class Breakout extends BasicGame {
 			bufParticle1.setRGBA(2, 0, colors1[0], colors1[1], colors1[2], 0);
 			bufParticle1.setRGBA(2, 1, colors1[0], colors1[1], colors1[2], 255);
 			bufParticle1.setRGBA(2, 2, colors1[0], colors1[1], colors1[2], 0);
+			for(int i=0;i<5;i++)
+				bufParticle2.setRGBA(i, 0, colors2[0], colors2[1], colors2[2], 255);
 			imageParticle.add(new Image(bufParticle1));
+			imageParticle.add(new Image(bufParticle2));
 			try
 			{
 				buttonImage = new Image[5];
@@ -779,7 +778,7 @@ public class Breakout extends BasicGame {
 		for(int i=0;i<button.size();i++)
 		{
 			Button tempButton=button.get(i);
-			if(tempButton.getVisible())
+			if(tempButton.getVisible())	
 			{
 				g.drawImage(buttonImage[tempButton.getImageNumber()],(float)tempButton.getPos().getX(),(float)tempButton.getPos().getY());
 				
@@ -787,7 +786,7 @@ public class Breakout extends BasicGame {
 		}
 		if(gameState==GameState.startGame)
 		{
-			g.setColor(Color.green);
+			g.setColor(Color.white);
 			g.drawString("Player movement keys are:\n\nPlayer 1\nLeft: 'a'\nRight: 'd'\n\nPlayer 2\nLeft: 'left arrow key'\nRight: 'right arrow key'\n\nPause: 'p'" , 30, 170);
 			Button tempButton;
 			g.setLineWidth(3);
@@ -877,18 +876,7 @@ public class Breakout extends BasicGame {
 						g.drawOval((int)tempBall.getX(),(int)tempBall.getY(),ballRadius,ballRadius);
 					}
 				}
-				for(int i=0;i<particle.size();i++)
-				{
-					Particle tempPart = particle.get(i);
-					int type=tempPart.getType();
-					if(imageParticle.size()>=type)
-					{
-						Image tempImage=imageParticle.get(type);
-						tempImage.startUse();
-						tempImage.drawEmbedded((int)tempPart.getXOffset(), (int)tempPart.getYOffset(), tempPart.getWidth(), tempPart.getHeight());		
-						tempImage.endUse();
-					}
-				}
+				
 				for(int i=0;i<powerup.size();i++)
 				{
 					Powerup tempPower=powerup.get(i);
@@ -917,21 +905,42 @@ public class Breakout extends BasicGame {
 				for(int i=0;i<player.size();i++)
 				{
 					Player tmpPlayer=player.get(i);
+					Color col = tmpPlayer.getColor();
 					playerImage[i].draw((float)tmpPlayer.getX(), (float)tmpPlayer.getY(),(float)tmpPlayer.getWidth(),playerHeight);
 					//g.drawIm
 					//g.drawImage(playerImage, (float)tmpPlayer.getX(), (float)tmpPlayer.getY(),(float)tmpPlayer.getWidth(),playerHeight);
 					for(int k=0;k<tmpPlayer.ball.size();k++)
 					{
 						Ball tempBall=tmpPlayer.ball.get(k);
-						g.drawImage(ballImage, (float)tempBall.getX(), (float)tempBall.getY());
+						if(gameState==GameState.inGame)
+						{
+							ballImage.setAlpha((float) 0.2);
+							g.drawImage(ballImage, (float)(tempBall.getX()-5*tempBall.getXVel()), (float)(tempBall.getY()-5*tempBall.getYVel()),col);
+						}
+						ballImage.setAlpha((float)1.0);
+						g.drawImage(ballImage, (float)tempBall.getX(), (float)tempBall.getY(),col);
 					}
 				}
 			}
+			g.setColor(Color.white);
+			g.drawString("Highscore: " + highScore,width-150,10);
 			for(int k=0;k<player.size();k++)
 			{
 				Player tempPlayer=player.get(k);
 				g.setColor(Color.white);
 				g.drawString("Player " + (k+1) + "\nScore: " + tempPlayer.getScore() + "\nLives: " + tempPlayer.getLives(), k*100+10,10);
+			}
+			for(int i=0;i<particle.size();i++)
+			{
+				Particle tempPart = particle.get(i);
+				int type=tempPart.getType();
+				if(imageParticle.size()>=type)
+				{
+					Image tempImage=imageParticle.get(type);
+					tempImage.startUse();
+					tempImage.drawEmbedded((int)tempPart.getX(), (int)tempPart.getY(), tempPart.getWidth(), tempPart.getHeight());		
+					tempImage.endUse();
+				}
 			}
 		}//pause
 		if(gameState==GameState.paused)
@@ -971,6 +980,7 @@ public class Breakout extends BasicGame {
 		button.add(player2);
 		setGraphics(true);
 		changeState(GameState.startGame);
+		readData();
 	}
 	public static void setPlayers(int count)
 	{
@@ -1036,12 +1046,28 @@ public class Breakout extends BasicGame {
 				double Vel=1;
 				double xVel=0;
 				double yVel=0;
-				double velOffset=10;
+				double velOffset=1;
 				for(int i=0;i<n;i++)
 				{
 					xVel=velOffset*Math.sin(angle*i)/Vel;
 					yVel=velOffset*Math.cos(angle*i)/Vel;
 					particle.add(new Particle(new Pos(x,y),3,3,xVel,yVel,100,0));
+				}
+				break;
+			}
+			case(1):
+			{
+				double xVel=3;
+				double yVel=0;
+				int step = 2;
+				int c=0;
+				for(int i=0;i<n;i++)
+				{
+					particle.add(new Particle(new Pos(x,y+(step*c)),50,1,xVel,yVel,500,1));
+					particle.add(new Particle(new Pos(x,y+(step*c)),50,1,-1*xVel,yVel,500,1));
+					step*=-1;
+					if(i%2==0)
+						c++;
 				}
 				break;
 			}
@@ -1175,12 +1201,11 @@ public class Breakout extends BasicGame {
 		int x2=x1+a.getWidth();
 		int y1=(int)a.getY();
 		int y2=y1+a.getHeight();
-		int collideX=0;
 		int X1=(int)b.getX();
 		int Y1=(int)b.getY();
 		int radius=b.getRadius();
 		if(x1 <X1 + radius && x2 > X1)
-			if(y1<b.getY()+radius && y2>b.getY())
+			if(y1<Y1+radius && y2>Y1)
 			{
 				return true;
 			}
@@ -1240,30 +1265,74 @@ public class Breakout extends BasicGame {
 	}
 	public static void incWidth(int owner, int amount)
 	{
-		player.get(owner).incWidth(amount);
+		Player tempPlayer=player.get(owner);
+		createParticle(tempPlayer.getX()+tempPlayer.getWidth()/2,tempPlayer.getY()+tempPlayer.getHeight()/2,3,1);
+		tempPlayer.incWidth(amount);
+		
+	}
+	public static void readData()
+	{
+		try 
+		{
+			Scanner input = new Scanner(new FileReader("data.txt"));
+			String in="";
+			String parse[];
+			while(input.hasNextLine())
+			{
+				in=input.nextLine();
+				if(in.contains("="))
+				{
+					parse=in.split("=");
+					if(parse.length==2)
+					{
+						if(parse[0].equals("highscore"))
+						{
+							highScore=Integer.parseInt(parse[1]);
+						}
+					}
+				}
+			}
+			input.close();
+		} 
+		catch (FileNotFoundException e) {
+			
+			highScore=0;
+			e.printStackTrace();
+		}
+	}
+	public static void saveData()
+	{
+		try {
+            File file = new File("data.txt");
+            BufferedWriter output = new BufferedWriter(new FileWriter(file));
+            output.write("highscore="+highScore);
+            output.close();
+        } catch ( IOException e ) {
+            e.printStackTrace();
+        }
 	}
 }
 
 /* 
 
 [50%] start menu
-[ ] player count
+[+] player count
 [?] highscore
-[?] better graphics
+[+] better graphics
 
 [ ] randomized maps (follows pattern) aka formations
 [+] temporary powerups (addBall? lives?)
 [+] permanent powerups
 [+] 2 players: movement "ad", "left right"
-[ ] 1st player data: left screen, 2nd player data: right screen : player.id!!
+[+] 1st player data: left screen, 2nd player data: right screen : player.id!!
 
 [+] POWERUPS: Activate via button:
 [+] increasePlayerWidth
 [+] addLives
 [+] addBall - already exists 
-[ ] Graphics
+[+] Graphics
 
 TEXT FILES: 
 [ ] level data read
-[ ] highscore write
+[+] highscore write
  */
