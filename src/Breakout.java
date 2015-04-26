@@ -456,6 +456,7 @@ public class Breakout extends BasicGame {
 		Input input=gc.getInput();
 		boolean mouseDown = input.isMousePressed(0);
 		boolean pDown=input.isKeyPressed(input.KEY_P);
+		boolean spaceDown=input.isKeyPressed(input.KEY_SPACE);
 		if(totalScore>highScore)
 		{
 			highScore=totalScore;
@@ -512,7 +513,7 @@ public class Breakout extends BasicGame {
 				}
 			}
 		}
-		if((mouseDown||pDown) && gameState==GameState.gameOver)
+		if((mouseDown||pDown||spaceDown) && gameState==GameState.gameOver)
 		{
 			gc.exit();
 		}
@@ -521,7 +522,7 @@ public class Breakout extends BasicGame {
 		else if(pDown && gameState==GameState.inGame)
 			changeState(GameState.paused);
 		if(gameState==GameState.paused)
-			if(mouseDown || input.isKeyDown(input.KEY_SPACE))
+			if(mouseDown || spaceDown)
 			{
 				changeState(GameState.inGame);
 			}
@@ -724,16 +725,13 @@ public class Breakout extends BasicGame {
 			//ImageBuffer bufParticle2 = new ImageBuffer(2,3);
 			int[] colors1={255,255,255};
 			int[] colors2={255,255,255};
-			//int[] colors2={0,255,0};
-			bufParticle1.setRGBA(0, 0, colors1[0], colors1[1], colors1[2], 0);
-			bufParticle1.setRGBA(0, 1, colors1[0], colors1[1], colors1[2], 255);
-			bufParticle1.setRGBA(0, 2, colors1[0], colors1[1], colors1[2], 0);
-			bufParticle1.setRGBA(1, 0, colors1[0], colors1[1], colors1[2], 255);
-			bufParticle1.setRGBA(1, 1, colors1[0], colors1[1], colors1[2], 0);
-			bufParticle1.setRGBA(1, 2, colors1[0], colors1[1], colors1[2], 255);
-			bufParticle1.setRGBA(2, 0, colors1[0], colors1[1], colors1[2], 0);
-			bufParticle1.setRGBA(2, 1, colors1[0], colors1[1], colors1[2], 255);
-			bufParticle1.setRGBA(2, 2, colors1[0], colors1[1], colors1[2], 0);
+			for(int i=0;i<3;i++)
+			{
+				for(int j=0;j<3;j++)
+				{
+					bufParticle1.setRGBA(i, j, colors1[0], colors1[1], colors1[2], ((i+j))%2*255);
+				}
+			}
 			for(int i=0;i<5;i++)
 				bufParticle2.setRGBA(i, 0, colors2[0], colors2[1], colors2[2], 255);
 			imageParticle.add(new Image(bufParticle1));
@@ -1000,9 +998,6 @@ public class Breakout extends BasicGame {
 	}
 	public static void main(String[] args) 
 	{
-		
-		// MENU OPTION IN START SCREEN TWO PLAYERS (future)
-		
 		try
 		{
 			AppGameContainer appgc;
@@ -1088,7 +1083,7 @@ public class Breakout extends BasicGame {
 			}
 			else if(n==1)
 			{
-				Ball tempBall=tempPlayer.ball.get(i);
+				Ball tempBall=tempPlayer.ball.get(0);
 				tempBall.setPos(tempPlayer.getX()+tempPlayer.getWidth()/2-ballRadius/2,tempPlayer.getY()-ballRadius-1);
 				tempBall.setXVel(0);
 				tempBall.setYVel(-1);
