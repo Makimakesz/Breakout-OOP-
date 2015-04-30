@@ -92,7 +92,7 @@ class Brick
 class Player
 {
 	public final int ID;	
-	private int lives=3;
+	private int lives=Breakout.playerLife;
 	private int score=0;
 	private Pos pos;
 	private int width=Breakout.playerWidth;//will be used when powerups are added(that change the width) and 2 players can play 
@@ -412,6 +412,7 @@ public class Breakout extends BasicGame {
 	static int playerWidth=100;
 	static int playerHeight=10;
 	static int playerSpeed=15;
+	static int playerLife=1;
 	static int wallSpace=ballRadius+10;
 	static int level=1;
 	static int frameCount=0;
@@ -424,6 +425,7 @@ public class Breakout extends BasicGame {
 	static int keysRight[]={32,205};
 	static int powerupChance=15;
 	static int incWidthAmount=10;
+	static int textDrawX=70;
 	static double velOffset=1;
 	static double gameOffset=10;
 	static double maxBallVel=1.0*velOffset;
@@ -833,10 +835,10 @@ public class Breakout extends BasicGame {
 		if(gameState==GameState.startGame)
 		{
 			g.setColor(Color.white);
-			g.drawString("Player movement keys are:",30,170);
-			g.drawString("Player 1\nLeft: 'a'\nRight: 'd'\n\nPause: 'p'",30,200);
-			g.drawString("Player 2\nLeft: 'left arrow key'\nRight: 'right arrow key'" , 170, 200);
-			g.drawString("The idea of the game is to get the highest total score\nor to compete with a friend in the compete mode\n",30,350);
+			g.drawString("Player movement keys are:",textDrawX,180);
+			g.drawString("Player 1\nLeft: 'a'\nRight: 'd'\n\nPause: 'p'\nTo continue the game press 'p' or 'space'",textDrawX,210);
+			g.drawString("Player 2\nLeft: 'left arrow key'\nRight: 'right arrow key'" , textDrawX+140, 210);
+			g.drawString("The idea of the game is to get the highest total score\nor to compete with a friend in the competition mode\n",textDrawX,350);
 			
 			buttonBorder(g,0);
 			if(numPlayers==1)
@@ -985,8 +987,15 @@ public class Breakout extends BasicGame {
 			}
 			else if(gameMode==GameMode.competition)
 			{
-				int winner = (totalScore[0]>totalScore[1])?0:1;
-				g.drawString("Player " + (winner+1) + " wins!\nScore: " + totalScore[winner],textX , textY+40 );
+				if(totalScore[0]!=totalScore[1])
+				{
+					int winner = (totalScore[0]>totalScore[1])?0:1;
+					g.drawString("Player " + (winner+1) + " wins!\nScore: " + totalScore[winner],textX , textY+40 );
+				}
+				else
+				{
+					g.drawString("Draw!\nScores: "+totalScore[0],textX,textY+40);
+				}
 			}
 		}
 	}
@@ -1000,13 +1009,17 @@ public class Breakout extends BasicGame {
 			tmpPlayer.setKeys(keysLeft[i], keysRight[i]);
 			tmpPlayer.setColor(playerColors[i]);
 		}
-		Button startGame = new Button("startGame",getClass((Class[])null),getObj((Object[])null),300,500,200,50,0);
-		Button textures1=new Button("setGraphics",getClass(boolean.class),getObj(true),30,30,200,50,1);
-		Button textures2=new Button("setGraphics",getClass(boolean.class),getObj(false),260,30,200,50,2);
-		Button player1=new Button("setPlayers",getClass(int.class),getObj((int)1),30,100,200,50,3);
-		Button player2=new Button("setPlayers",getClass(int.class),getObj((int)2),260,100,200,50,4);
-		Button arcade=new Button("setMode",getClass(GameMode.class),getObj(GameMode.arcade),490,30,200,50,5);
-		Button competition=new Button("setMode",getClass(GameMode.class),getObj(GameMode.competition),490,100,200,50,6);
+		int spacing=30;
+		int border=70;
+		int buttonWidth=200;
+		int buttonHeight=50;
+		Button startGame = new Button("startGame",getClass((Class[])null),getObj((Object[])null),width/2-buttonWidth/2,500,buttonWidth,buttonHeight,0);
+		Button textures1=new Button("setGraphics",getClass(boolean.class),getObj(true),border,30,buttonWidth,buttonHeight,1);
+		Button textures2=new Button("setGraphics",getClass(boolean.class),getObj(false),border+buttonWidth+spacing,30,buttonWidth,buttonHeight,2);
+		Button player1=new Button("setPlayers",getClass(int.class),getObj((int)1),border,100,buttonWidth,buttonHeight,3);
+		Button player2=new Button("setPlayers",getClass(int.class),getObj((int)2),border+200+spacing,100,buttonWidth,buttonHeight,4);
+		Button arcade=new Button("setMode",getClass(GameMode.class),getObj(GameMode.arcade),border+2*buttonWidth+2*spacing,30,buttonWidth,buttonHeight,5);
+		Button competition=new Button("setMode",getClass(GameMode.class),getObj(GameMode.competition),border+2*buttonWidth+2*spacing,100,buttonWidth,buttonHeight,6);
 		startGame.setStates(GameState.startGame);
 		textures1.setStates(GameState.startGame);
 		textures2.setStates(GameState.startGame);
@@ -1062,7 +1075,7 @@ public class Breakout extends BasicGame {
 		try
 		{
 			AppGameContainer appgc;
-			appgc = new AppGameContainer(new Breakout("Breakout"));
+			appgc = new AppGameContainer(new Breakout("Block Destruction"));
 			appgc.setDisplayMode(width,height,false);
 			appgc.setTargetFrameRate(targetFPS);
 			appgc.setShowFPS(false);
@@ -1324,8 +1337,7 @@ public class Breakout extends BasicGame {
 	{
 		Player tempPlayer=player.get(owner);
 		createParticle(tempPlayer.getX()+tempPlayer.getWidth()/2,tempPlayer.getY()+tempPlayer.getHeight()/2,3,1);
-		tempPlayer.incWidth(amount);
-		
+		tempPlayer.incWidth(amount);	
 	}
 	public static void readData()
 	{
@@ -1371,10 +1383,9 @@ public class Breakout extends BasicGame {
 }
 
 /* 
-
-[50%] start menu
+[?] start menu
 [+] player count
-[?] highscore
+[+] highscore
 [+] better graphics
 
 [ ] randomized maps (follows pattern) aka formations
@@ -1391,5 +1402,5 @@ public class Breakout extends BasicGame {
 
 TEXT FILES: 
 [ ] level data read
-[+] highscore write
+[+] highscore read/write
  */
