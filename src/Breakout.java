@@ -103,7 +103,7 @@ class Player
 	private Color color;
 	private double xVel=1.5;
 	public int getScore(){return score;}
-	public void incScore(int score){this.score+=score;Breakout.totalScore+=score;}
+	public void incScore(int score){this.score+=score;Breakout.totalScore[ID]+=score;}
 	public void decLives(int lives){this.lives-=lives;}
 	public void incLives(int lives){this.lives+=lives;}//can be done with just 1 method but this looks nicer
 	public int getLives(){return lives;}
@@ -396,6 +396,10 @@ enum GameState
 {
 	startGame,inGame,paused, gameOver
 }
+enum GameMode
+{
+	arcade,competition
+}
 public class Breakout extends BasicGame {
 	static boolean isBasic=true;
 	static boolean isLoaded=false;
@@ -414,7 +418,7 @@ public class Breakout extends BasicGame {
 	static int tempFrame=0;
 	static int randSeed=1;
 	static int numPlayers=1;
-	static int totalScore=0;
+	static int totalScore[]={0,0};
 	static int highScore=0;
 	static int keysLeft[]={30,203};
 	static int keysRight[]={32,205};
@@ -427,6 +431,7 @@ public class Breakout extends BasicGame {
 	static Color playerColors[]={new Color(95,148,232,255),new Color(27,202,91,255)};
 	static Color powerColor[]={Color.white,Color.yellow,Color.magenta};
 	static GameState gameState=GameState.startGame;
+	static GameMode gameMode=GameMode.arcade;
 	
 	static ArrayList<Brick> brick = new ArrayList<Brick>();
 	static ArrayList<Player> player = new ArrayList<Player>();
@@ -457,9 +462,29 @@ public class Breakout extends BasicGame {
 		boolean mouseDown = input.isMousePressed(0);
 		boolean pDown=input.isKeyPressed(input.KEY_P);
 		boolean spaceDown=input.isKeyPressed(input.KEY_SPACE);
-		if(totalScore>highScore)
+		/*for(int v = 0;v<player.size();v++)
 		{
-			highScore=totalScore;
+			if(gameMode==GameMode.arcade)
+			{
+			if(totalScore>highScore)
+			{
+				highScore=totalScore;
+				saveData();
+			}
+			}
+		}*/
+		int sumScore=0;
+		if(gameMode==GameMode.arcade)
+		{
+			sumScore=totalScore[0]+totalScore[1];//totalScore[1]=0 if numPlayers=1
+		}
+		else if(gameMode==GameMode.competition)
+		{
+			sumScore=(totalScore[0]>totalScore[1])?totalScore[0]:totalScore[1];
+		}
+		if(sumScore>highScore)
+		{
+			highScore=sumScore;
 			saveData();
 		}
 		int mouseX=input.getMouseX();
@@ -715,6 +740,26 @@ public class Breakout extends BasicGame {
 		}
 		}
 	}
+	public void buttonBorder(Graphics g,int buttonA,int buttonB) throws SlickException
+	{
+		Button tempButton;
+		g.setLineWidth(3);
+		g.setColor(Color.red);
+		tempButton=button.get(buttonA);
+		g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+		g.setLineWidth(1);
+		g.setColor(Color.gray);
+		tempButton=button.get(buttonB);
+		g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+	}
+	public void buttonBorder(Graphics g, int buttonA) throws SlickException
+	{
+		Button tempButton;
+		g.setLineWidth(3);
+		g.setColor(Color.red);
+		tempButton=button.get(buttonA);
+		g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+	}
 	@Override public void render(GameContainer gc, Graphics g) throws SlickException 
 	{
 		//start screen
@@ -738,12 +783,15 @@ public class Breakout extends BasicGame {
 			imageParticle.add(new Image(bufParticle2));
 			try
 			{
-				buttonImage = new Image[5];
+				buttonImage = new Image[7];
 				buttonImage[0]=new Image("data/start.png");
 				buttonImage[1]=new Image("data/gfx.png");
 				buttonImage[2]=new Image("data/basic.png");
 				buttonImage[3]=new Image("data/players1.png");
 				buttonImage[4]=new Image("data/players2.png");
+				buttonImage[5]=new Image("data/arcade.png");
+				buttonImage[6]=new Image("data/competition.png");
+				
 				int playerCount=2;
 				int brickCount=9;
 				int powerupCount=3;
@@ -785,59 +833,36 @@ public class Breakout extends BasicGame {
 		if(gameState==GameState.startGame)
 		{
 			g.setColor(Color.white);
-			g.drawString("Player movement keys are:\n\nPlayer 1\nLeft: 'a'\nRight: 'd'\n\nPlayer 2\nLeft: 'left arrow key'\nRight: 'right arrow key'\n\nPause: 'p'" , 30, 170);
-			Button tempButton;
-			g.setLineWidth(3);
-			g.setColor(Color.red);
-			tempButton=button.get(0);
-			g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+			g.drawString("Player movement keys are:",30,170);
+			g.drawString("Player 1\nLeft: 'a'\nRight: 'd'\n\nPause: 'p'",30,200);
+			g.drawString("Player 2\nLeft: 'left arrow key'\nRight: 'right arrow key'" , 170, 200);
+			g.drawString("The idea of the game is to get the highest total score\nor to compete with a friend in the compete mode\n",30,350);
+			
+			buttonBorder(g,0);
 			if(numPlayers==1)
 			{
-				g.setLineWidth(3);
-				g.setColor(Color.red);
-				tempButton=button.get(3);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
-				g.setLineWidth(1);
-				g.setColor(Color.gray);
-				tempButton=button.get(4);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				buttonBorder(g,3,4);
 			}
 			else
 			{
-				g.setLineWidth(3);
-				g.setColor(Color.red);
-				tempButton=button.get(4);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
-				g.setLineWidth(1);
-				g.setColor(Color.gray);
-				tempButton=button.get(3);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				buttonBorder(g,4,3);
+				if(gameMode==GameMode.arcade)
+				{
+					buttonBorder(g,5,6);
+				}
+				else if(gameMode==GameMode.competition)
+				{
+					buttonBorder(g,6,5);
+				}
 			}
 			if(isBasic)
 			{
-				g.setLineWidth(3);
-				g.setColor(Color.red);
-				tempButton=button.get(2);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
-				g.setLineWidth(1);
-				g.setColor(Color.gray);
-				tempButton=button.get(1);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				buttonBorder(g,2,1);
 			}
 			else
 			{
-				g.setLineWidth(3);
-				g.setColor(Color.red);
-				tempButton=button.get(1);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
-				g.setLineWidth(1);
-				g.setColor(Color.gray);
-				tempButton=button.get(2);
-				g.drawRect((float)tempButton.getPos().getX(),(float)tempButton.getPos().getY(), tempButton.getWidth(), tempButton.getHeight());
+				buttonBorder(g,1,2);
 			}
-				/*Image image;
-				Texture text;
-				text=TextureLoader.*/
 		}
 		//game
 		if(gameState==GameState.inGame || gameState==GameState.paused)
@@ -912,8 +937,11 @@ public class Breakout extends BasicGame {
 						Ball tempBall=tmpPlayer.ball.get(k);
 						if(gameState==GameState.inGame)
 						{
-							ballImage.setAlpha((float) 0.2);
-							g.drawImage(ballImage, (float)(tempBall.getX()-5*tempBall.getXVel()), (float)(tempBall.getY()-5*tempBall.getYVel()),col);
+							for(int l=1;l<20;l++)//TRAIL MAYBE TEMP
+							{
+								ballImage.setAlpha((float) (1.0/Math.ceil(l/2)));//trail
+								g.drawImage(ballImage, (float)(tempBall.getX()-l*tempBall.getXVel()), (float)(tempBall.getY()-l*tempBall.getYVel()),col);
+							}
 						}
 						ballImage.setAlpha((float)1.0);
 						g.drawImage(ballImage, (float)tempBall.getX(), (float)tempBall.getY(),col);
@@ -947,8 +975,19 @@ public class Breakout extends BasicGame {
 		}
 		if(gameState==GameState.gameOver)
 		{
-			g.drawString("Game over", width/2-50,(int)(height/1.5));
-			g.drawString("Total Score: " + totalScore,width/2-50,(int)(height/1.5)+40);
+			int textX=width/2-80;
+			int textY=(int)(height/1.5);
+			g.drawString("Game over", textX,textY);
+			if(gameMode==GameMode.arcade)
+			{
+				int TotalScore=totalScore[0]+totalScore[1];
+				g.drawString("Total Score: " + TotalScore,textX,textY+40);
+			}
+			else if(gameMode==GameMode.competition)
+			{
+				int winner = (totalScore[0]>totalScore[1])?0:1;
+				g.drawString("Player " + (winner+1) + " wins!\nScore: " + totalScore[winner],textX , textY+40 );
+			}
 		}
 	}
 	public static void Init()
@@ -966,6 +1005,8 @@ public class Breakout extends BasicGame {
 		Button textures2=new Button("setGraphics",getClass(boolean.class),getObj(false),260,30,200,50,2);
 		Button player1=new Button("setPlayers",getClass(int.class),getObj((int)1),30,100,200,50,3);
 		Button player2=new Button("setPlayers",getClass(int.class),getObj((int)2),260,100,200,50,4);
+		Button arcade=new Button("setMode",getClass(GameMode.class),getObj(GameMode.arcade),490,30,200,50,5);
+		Button competition=new Button("setMode",getClass(GameMode.class),getObj(GameMode.competition),490,100,200,50,6);
 		startGame.setStates(GameState.startGame);
 		textures1.setStates(GameState.startGame);
 		textures2.setStates(GameState.startGame);
@@ -976,6 +1017,8 @@ public class Breakout extends BasicGame {
 		button.add(textures2);
 		button.add(player1);
 		button.add(player2);
+		button.add(arcade);//no states
+		button.add(competition);
 		setGraphics(true);
 		changeState(GameState.startGame);
 		readData();
@@ -983,6 +1026,24 @@ public class Breakout extends BasicGame {
 	public static void setPlayers(int count)
 	{
 		numPlayers=count;
+		if(count==2)
+		{
+			button.get(5).setActive(true);
+			button.get(5).setVisibility(true);
+			button.get(6).setActive(true);
+			button.get(6).setVisibility(true);
+		}
+		else
+		{
+			button.get(5).setActive(false);
+			button.get(5).setVisibility(false);
+			button.get(6).setActive(false);
+			button.get(6).setVisibility(false);
+		}
+	}
+	public static void setMode(GameMode mode)
+	{
+		gameMode=mode;
 	}
 	public static void changeState(GameState gs)
 	{
@@ -1123,6 +1184,7 @@ public class Breakout extends BasicGame {
 		if(numPlayers==1)
 		{
 			player.remove(1);
+			gameMode=GameMode.arcade;
 		}
 		else
 		{
