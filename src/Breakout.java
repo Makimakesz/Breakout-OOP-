@@ -108,6 +108,7 @@ class Player
 	public void incLives(int lives){this.lives+=lives;}//can be done with just 1 method but this looks nicer
 	public int getLives(){return lives;}
 	public ArrayList<Ball> ball = new ArrayList<Ball>();
+	public int getID(){return ID;}
 	public void setPos(int x,int y)
 	{
 		pos.setX(x);
@@ -412,7 +413,7 @@ public class Breakout extends BasicGame {
 	static int playerWidth=100;
 	static int playerHeight=10;
 	static int playerSpeed=15;
-	static int playerLife=1;
+	static int playerLife=3;
 	static int wallSpace=ballRadius+10;
 	static int level=1;
 	static int frameCount=0;
@@ -517,7 +518,7 @@ public class Breakout extends BasicGame {
 		}
 		if(input.isKeyPressed(input.KEY_5))
 		{
-			powerup.add(new Powerup(2,300,300));
+			powerup.add(new Powerup(1,300,300));
 		}
 		if(gameState==GameState.inGame)
 		{
@@ -951,12 +952,14 @@ public class Breakout extends BasicGame {
 				}
 			}
 			g.setColor(Color.white);
-			g.drawString("Highscore: " + highScore,width-150,10);
+			g.drawString("Highscore: " + highScore,width/2-50,10);
 			for(int k=0;k<player.size();k++)
 			{
 				Player tempPlayer=player.get(k);
+				int ID=tempPlayer.getID();
 				g.setColor(Color.white);
-				g.drawString("Player " + (k+1) + "\nScore: " + tempPlayer.getScore() + "\nLives: " + tempPlayer.getLives(), k*100+10,10);
+				//g.drawString("Player " + (k+1) + "\nScore: " + tempPlayer.getScore() + "\nLives: " + tempPlayer.getLives(), k*100+10,10);
+				g.drawString("Player " + (ID+1) + "\nScore: " + tempPlayer.getScore() + "\nLives: " + tempPlayer.getLives(),10 + (width-120)*ID ,10);
 			}
 			for(int i=0;i<particle.size();i++)
 			{
